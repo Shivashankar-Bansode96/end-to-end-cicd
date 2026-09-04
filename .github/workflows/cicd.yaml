@@ -110,39 +110,11 @@ jobs:
         uses: actions/checkout@v4
 
 
-      # 2. Debug Kubernetes environment
-      - name: Debug Kubernetes environment
+      # 2. Verify Kubernetes cluster
+      - name: Verify Kubernetes cluster
         shell: powershell
         run: |
-          Write-Host "===== WINDOWS USER ====="
-          whoami
-
-          Write-Host "===== USER PROFILE ====="
-          Write-Host $env:USERPROFILE
-
-          Write-Host "===== KUBECONFIG ====="
-          Write-Host $env:KUBECONFIG
-
-          Write-Host "===== KUBECTL LOCATION ====="
-          Get-Command kubectl | Select-Object Source
-
-          Write-Host "===== CURRENT CONTEXT ====="
-          kubectl config current-context
-
-          Write-Host "===== AVAILABLE CONTEXTS ====="
-          kubectl config get-contexts
-
-          Write-Host "===== API SERVER ====="
-          kubectl config view --minify -o jsonpath="{.clusters[0].cluster.server}"
-
-          Write-Host ""
-
-          Write-Host "===== MINIKUBE STATUS ====="
-          minikube status
-
-          Write-Host "===== KUBERNETES NODES ====="
           kubectl get nodes
-
 
       # 3. Verify Docker
       - name: Verify Docker
@@ -150,7 +122,7 @@ jobs:
         run: |
           docker version
 
-
+ 
       # 4. Deploy application
       - name: Deploy application
         shell: powershell
