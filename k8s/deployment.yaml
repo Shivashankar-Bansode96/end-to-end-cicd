@@ -6,7 +6,7 @@ metadata:
 
 spec:
   replicas: 2
-  
+
   revisionHistoryLimit: 5
 
   selector:
@@ -19,12 +19,22 @@ spec:
         app: cicd-demo
 
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+
       containers:
         - name: cicd-demo
-
-          image: ghcr.io/shivashankar-bansode96/cicd-demo:latest
-
+          image: cicd-demo:1.0
           imagePullPolicy: IfNotPresent
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
 
           ports:
             - containerPort: 5000
