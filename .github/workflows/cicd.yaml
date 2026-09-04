@@ -127,6 +127,9 @@ jobs:
       - name: Deploy application
         shell: powershell
         run: |
+          kubectl apply -f k8s/deployment.yaml
+          kubectl apply -f k8s/service.yaml
+
           kubectl set image deployment/cicd-demo `
             cicd-demo=${{ env.IMAGE_NAME }}:${{ github.sha }}
           
