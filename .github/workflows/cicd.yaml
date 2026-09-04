@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: End-to-End CI/CD
 
 on:
   push:
@@ -14,7 +14,13 @@ env:
 
 jobs:
 
+  # ==========================================
+  # CI
+  # ==========================================
+
   build-test-scan:
+
+    name: Build, Test & Scan
 
     runs-on: ubuntu-latest
 
@@ -24,46 +30,31 @@ jobs:
 
     steps:
 
-      # --------------------------------
-      # 1. Checkout source code
-      # --------------------------------
-
+      # 1. Checkout
       - name: Checkout repository
         uses: actions/checkout@v4
 
 
-      # --------------------------------
       # 2. Setup Python
-      # --------------------------------
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
 
-      # --------------------------------
       # 3. Install dependencies
-      # --------------------------------
-
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
 
 
-      # --------------------------------
       # 4. Run tests
-      # --------------------------------
-
       - name: Run tests
         run: |
           pytest
 
 
-      # --------------------------------
-      # 5. Login to GitHub Container Registry
-      # --------------------------------
-
+      # 5. Login to GHCR
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
@@ -72,20 +63,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
 
-      # --------------------------------
       # 6. Build Docker image
-      # --------------------------------
-
       - name: Build Docker image
         run: |
           docker build \
             -t ${{ env.IMAGE_NAME }}:${{ github.sha }} .
 
 
-      # --------------------------------
-      # 7. Trivy vulnerability scan
-      # --------------------------------
-
+      # 7. Trivy scan
       - name: Trivy vulnerability scan
         uses: aquasecurity/trivy-action@v0.36.0
         with:
@@ -97,11 +82,67 @@ jobs:
           severity: "CRITICAL,HIGH"
 
 
-      # --------------------------------
-      # 8. Push image to GHCR
-      # --------------------------------
-
+      # 8. Push image
       - name: Push Docker image
         run: |
           docker push \
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+
+  # ==========================================
+  # CD
+  # ==========================================
+
+  deploy:
+
+    name: Deploy to Kubernetes
+
+    needs: build-test-scan
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    runs-on: [self-hosted, windows, x64]
+
+    steps:
+
+      # 1. Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      # 2. Verify Kubernetes
+      - name: Verify Kubernetes cluster
+        shell: powershell
+        run: |
+          kubectl get nodes
+
+
+      # 3. Verify Docker
+      - name: Verify Docker
+        shell: powershell
+        run: |
+          docker version
+
+
+      # 4. Deploy image
+      - name: Deploy application
+        shell: powershell
+        run: |
+          kubectl set image deployment/cicd-demo `
+            cicd-demo=${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+
+      # 5. Wait for rollout
+      - name: Wait for rollout
+        shell: powershell
+        run: |
+          kubectl rollout status deployment/cicd-demo --timeout=120s
+
+
+      # 6. Verify deployment
+      - name: Verify deployment
+        shell: powershell
+        run: |
+          kubectl get deployment cicd-demo
+          kubectl get pods -l app=cicd-demo
+          kubectl get service cicd-demo
