@@ -172,4 +172,4 @@ jobs:
         run: |
           kubectl get deployment cicd-demo
           kubectl get pods -l app=cicd-demo
-          kubectl get service cicd-demo
+          kubectl get service cicd-demo-service
