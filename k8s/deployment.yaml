@@ -6,6 +6,8 @@ metadata:
 
 spec:
   replicas: 2
+  
+  revisionHistoryLimit: 5
 
   selector:
     matchLabels:
@@ -20,7 +22,7 @@ spec:
       containers:
         - name: cicd-demo
 
-          image: cicd-demo:1.0
+          image: ghcr.io/shivashankar-bansode96/cicd-demo:latest
 
           imagePullPolicy: IfNotPresent
 
